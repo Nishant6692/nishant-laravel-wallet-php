@@ -36,6 +36,18 @@ If the package is published to Packagist, use:
 composer require nishant/wallet
 ```
 
+**Note**: If you get a stability error, make sure the package has a stable version tag (v1.0.0) in the Git repository. You can also install a specific version:
+
+```bash
+composer require nishant/wallet:^1.0
+```
+
+Or if you need to allow dev stability temporarily:
+
+```bash
+composer require nishant/wallet --dev
+```
+
 #### Option B: Local Development Setup
 
 If you're developing the package locally or testing it before publishing, add it to your Laravel project's `composer.json`:

@@ -44,8 +44,6 @@
                 "Nishant\\Wallet\\WalletServiceProvider"
             ]
         }
-    },
-    "minimum-stability": "dev",
-    "prefer-stable": true
+    }
 }
 
