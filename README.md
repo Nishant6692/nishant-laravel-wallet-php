@@ -1,5 +1,9 @@
 # Nishant Wallet - Multi-Wallet Management Package for Laravel 11
 
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/nishant/wallet.svg?style=flat-square)](https://packagist.org/packages/nishant/wallet)
+[![Total Downloads](https://img.shields.io/packagist/dt/nishant/wallet.svg?style=flat-square)](https://packagist.org/packages/nishant/wallet)
+[![License](https://img.shields.io/packagist/l/nishant/wallet.svg?style=flat-square)](https://packagist.org/packages/nishant/wallet)
+
 A comprehensive Laravel package for managing multiple wallets per user with deposit, withdraw, and transaction tracking capabilities. Built for Laravel 11 and PHP 8.0+.
 
 ## Features
