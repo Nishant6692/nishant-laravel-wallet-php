@@ -1,0 +1,42 @@
+{
+    "name": "nishant/wallet",
+    "description": "A Laravel package for managing multiple wallets per user with deposit, withdraw, and transaction tracking",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "laravel",
+        "wallet",
+        "multi-wallet",
+        "payment",
+        "transaction"
+    ],
+    "require": {
+        "php": "^8.0",
+        "illuminate/support": "^11.0",
+        "illuminate/database": "^11.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^9.0",
+        "phpunit/phpunit": "^10.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Nishant\\Wallet\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Nishant\\Wallet\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Nishant\\Wallet\\WalletServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
+
