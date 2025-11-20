@@ -16,7 +16,6 @@ A comprehensive Laravel package for managing multiple wallets per user with depo
 - ✅ Trait-based implementation
 - ✅ RESTful API endpoints
 - ✅ Soft deletes support
-- ✅ Currency support
 - ✅ Balance validation
 
 ## Requirements
@@ -139,7 +138,6 @@ The configuration file is located at `config/wallet.php`. You can customize:
 - **user_model**: The User model class (default: `App\Models\User`)
 - **route_prefix**: API route prefix (default: `api/wallet`)
 - **middleware**: Route middleware (default: `['api']`)
-- **default_currency**: Default currency code (default: `USD`)
 - **decimal_places**: Number of decimal places for balances (default: `2`)
 
 ## Usage
@@ -154,10 +152,10 @@ use App\Models\User;
 $user = User::find(1);
 
 // Create a new wallet
-$wallet = $user->createWallet('Main Wallet', 'USD', 'Primary wallet for transactions');
+$wallet = $user->createWallet('Main Wallet', 'Primary wallet for transactions');
 
 // Create another wallet
-$savingsWallet = $user->createWallet('Savings', 'USD', 'Savings account');
+$savingsWallet = $user->createWallet('Savings', 'Savings account');
 ```
 
 #### Using the Service
@@ -170,7 +168,6 @@ $walletService = app(WalletService::class);
 $wallet = $walletService->createWallet(
     userId: 1,
     name: 'Main Wallet',
-    currency: 'USD',
     description: 'Primary wallet'
 );
 ```
@@ -287,9 +284,6 @@ $activeWallets = $user->activeWallets();
 // Get wallet by name
 $wallet = $user->getWalletByName('Main Wallet');
 
-// Get wallet by slug
-$wallet = $user->getWalletBySlug('main-wallet');
-
 // Get wallet balance
 $balance = $wallet->getBalance();
 
@@ -300,9 +294,6 @@ if ($wallet->hasBalance(100.00)) {
 
 // Get total balance across all wallets
 $totalBalance = $user->getTotalBalance();
-
-// Get total balance by currency
-$usdBalance = $user->getTotalBalanceByCurrency('USD');
 ```
 
 ## API Endpoints
@@ -335,7 +326,6 @@ Authorization: Bearer {token}
 
 {
     "name": "Main Wallet",
-    "currency": "USD",
     "description": "Primary wallet"
 }
 ```
@@ -452,8 +442,6 @@ This trait is automatically used by the Wallet model and provides:
 - `id` - Primary key
 - `user_id` - Foreign key to users table
 - `name` - Wallet name
-- `slug` - Unique slug for wallet
-- `currency` - Currency code (3 characters)
 - `balance` - Current balance (decimal 15,2)
 - `is_active` - Active status
 - `description` - Optional description

@@ -6,8 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 use Nishant\Wallet\Contracts\WalletInterface;
+use Nishant\Wallet\Enums\TransactionType;
 use Nishant\Wallet\Traits\Walletable;
 
 class Wallet extends Model implements WalletInterface
@@ -29,8 +29,6 @@ class Wallet extends Model implements WalletInterface
     protected $fillable = [
         'user_id',
         'name',
-        'slug',
-        'currency',
         'balance',
         'is_active',
         'description',
@@ -45,22 +43,6 @@ class Wallet extends Model implements WalletInterface
         'balance' => 'decimal:2',
         'is_active' => 'boolean',
     ];
-
-    /**
-     * Boot the model.
-     *
-     * @return void
-     */
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($wallet) {
-            if (empty($wallet->slug)) {
-                $wallet->slug = Str::slug($wallet->name);
-            }
-        });
-    }
 
     /**
      * Get the user that owns the wallet.
@@ -86,11 +68,14 @@ class Wallet extends Model implements WalletInterface
     /**
      * Get transactions by type.
      *
-     * @param string $type
+     * @param TransactionType|string $type
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function getTransactionsByType(string $type)
+    public function getTransactionsByType(TransactionType|string $type)
     {
+        if ($type instanceof TransactionType) {
+            return $this->transactions()->where('type', $type->value)->get();
+        }
         return $this->transactions()->where('type', $type)->get();
     }
 
@@ -115,18 +100,6 @@ class Wallet extends Model implements WalletInterface
     public function scopeByName($query, string $name)
     {
         return $query->where('name', $name);
-    }
-
-    /**
-     * Scope to get wallets by slug.
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $slug
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function scopeBySlug($query, string $slug)
-    {
-        return $query->where('slug', $slug);
     }
 }
 

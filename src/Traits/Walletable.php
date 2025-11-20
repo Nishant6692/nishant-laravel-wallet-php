@@ -3,6 +3,7 @@
 namespace Nishant\Wallet\Traits;
 
 use Nishant\Wallet\Models\Transaction;
+use Nishant\Wallet\Enums\TransactionType;
 use Illuminate\Support\Str;
 use Exception;
 
@@ -43,7 +44,7 @@ trait Walletable
         $this->save();
 
         return $this->transactions()->create([
-            'type' => 'deposit',
+            'type' => TransactionType::DEPOSIT->value,
             'amount' => $amount,
             'balance_before' => $balanceBefore,
             'balance_after' => $this->balance,
@@ -82,7 +83,7 @@ trait Walletable
         $this->save();
 
         return $this->transactions()->create([
-            'type' => 'withdraw',
+            'type' => TransactionType::WITHDRAW->value,
             'amount' => $amount,
             'balance_before' => $balanceBefore,
             'balance_after' => $this->balance,

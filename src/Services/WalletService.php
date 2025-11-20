@@ -14,11 +14,10 @@ class WalletService
      *
      * @param int $userId
      * @param string $name
-     * @param string $currency
      * @param string|null $description
      * @return Wallet
      */
-    public function createWallet(int $userId, string $name, string $currency = 'USD', ?string $description = null): Wallet
+    public function createWallet(int $userId, string $name, ?string $description = null): Wallet
     {
         $userModel = config('wallet.user_model', \App\Models\User::class);
         $user = $userModel::findOrFail($userId);
@@ -27,7 +26,7 @@ class WalletService
             throw new Exception('User model must use HasWallets trait.');
         }
 
-        return $user->createWallet($name, $currency, $description);
+        return $user->createWallet($name, $description);
     }
 
     /**

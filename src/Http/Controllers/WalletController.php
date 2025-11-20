@@ -57,7 +57,6 @@ class WalletController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'currency' => 'nullable|string|size:3',
             'description' => 'nullable|string',
         ]);
 
@@ -65,7 +64,6 @@ class WalletController extends Controller
             $wallet = $this->walletService->createWallet(
                 auth()->id(),
                 $request->name,
-                $request->currency ?? 'USD',
                 $request->description
             );
 

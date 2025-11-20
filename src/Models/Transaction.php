@@ -5,6 +5,7 @@ namespace Nishant\Wallet\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Nishant\Wallet\Contracts\TransactionInterface;
+use Nishant\Wallet\Enums\TransactionType;
 
 class Transaction extends Model implements TransactionInterface
 {
@@ -37,6 +38,7 @@ class Transaction extends Model implements TransactionInterface
      * @var array<string, string>
      */
     protected $casts = [
+        'type' => TransactionType::class,
         'amount' => 'decimal:2',
         'balance_before' => 'decimal:2',
         'balance_after' => 'decimal:2',
@@ -127,11 +129,14 @@ class Transaction extends Model implements TransactionInterface
      * Scope to filter by type.
      *
      * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $type
+     * @param TransactionType|string $type
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function scopeOfType($query, string $type)
+    public function scopeOfType($query, TransactionType|string $type)
     {
+        if ($type instanceof TransactionType) {
+            return $query->where('type', $type->value);
+        }
         return $query->where('type', $type);
     }
 

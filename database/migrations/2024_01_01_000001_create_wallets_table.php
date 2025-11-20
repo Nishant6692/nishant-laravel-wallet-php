@@ -17,8 +17,6 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('user_id');
             $table->string('name');
-            $table->string('slug')->unique();
-            $table->string('currency', 3)->default('USD');
             $table->decimal('balance', 15, 2)->default(0);
             $table->boolean('is_active')->default(true);
             $table->text('description')->nullable();
@@ -27,7 +25,6 @@ return new class extends Migration
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->index(['user_id', 'name']);
-            $table->index('slug');
         });
     }
 
