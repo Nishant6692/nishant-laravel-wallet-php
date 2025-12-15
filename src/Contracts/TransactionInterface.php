@@ -52,5 +52,12 @@ interface TransactionInterface
      * @return array|null
      */
     public function getMeta(): ?array;
+
+    /**
+     * Determine if the transaction has been confirmed.
+     *
+     * @return bool
+     */
+    public function isConfirmed(): bool;
 }
 

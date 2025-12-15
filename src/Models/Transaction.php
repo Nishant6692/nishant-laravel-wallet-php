@@ -30,6 +30,7 @@ class Transaction extends Model implements TransactionInterface
         'reference',
         'description',
         'meta',
+        'confirmed',
     ];
 
     /**
@@ -43,6 +44,7 @@ class Transaction extends Model implements TransactionInterface
         'balance_before' => 'decimal:2',
         'balance_after' => 'decimal:2',
         'meta' => 'array',
+        'confirmed' => 'boolean',
     ];
 
     /**
@@ -123,6 +125,16 @@ class Transaction extends Model implements TransactionInterface
     public function getMeta(): ?array
     {
         return $this->meta;
+    }
+
+    /**
+     * Determine if the transaction has been confirmed.
+     *
+     * @return bool
+     */
+    public function isConfirmed(): bool
+    {
+        return (bool) $this->confirmed;
     }
 
     /**

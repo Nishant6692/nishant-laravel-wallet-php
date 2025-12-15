@@ -10,6 +10,7 @@ A comprehensive Laravel package for managing multiple wallets per user with depo
 
 - ✅ Multiple wallets per user
 - ✅ Deposit and withdraw functionality
+- ✅ Pending transactions with confirmation support
 - ✅ Transaction history tracking
 - ✅ Get transactions by wallet name
 - ✅ Interface-based architecture
@@ -179,30 +180,56 @@ $wallet = $walletService->createWallet(
 ```php
 $wallet = $user->getWalletByName('Main Wallet');
 
+// Immediate deposit (confirmed by default)
 $transaction = $wallet->deposit(
     amount: 100.00,
     reference: 'DEP-001',
     description: 'Initial deposit',
     meta: ['source' => 'bank_transfer']
 );
+
+// Pending deposit (not confirmed - balance won't change until confirmed)
+$pendingTransaction = $wallet->deposit(
+    amount: 100.00,
+    reference: 'DEP-002',
+    description: 'Pending deposit',
+    meta: null,
+    confirmed: false
+);
 ```
 
 #### Using the Service
 
 ```php
-// By wallet ID
+// By wallet ID - confirmed deposit
 $transaction = $walletService->deposit(
     walletId: $wallet->id,
     amount: 100.00,
     reference: 'DEP-001',
-    description: 'Initial deposit'
+    description: 'Initial deposit',
+    meta: null,
+    confirmed: true  // default is true
+);
+
+// By wallet ID - pending deposit
+$pendingTransaction = $walletService->deposit(
+    walletId: $wallet->id,
+    amount: 100.00,
+    reference: 'DEP-002',
+    description: 'Pending deposit',
+    meta: null,
+    confirmed: false  // balance won't change
 );
 
 // By wallet name
 $transaction = $walletService->depositByName(
     userId: 1,
     walletName: 'Main Wallet',
-    amount: 100.00
+    amount: 100.00,
+    reference: null,
+    description: null,
+    meta: null,
+    confirmed: true
 );
 ```
 
@@ -214,11 +241,21 @@ $transaction = $walletService->depositByName(
 $wallet = $user->getWalletByName('Main Wallet');
 
 try {
+    // Immediate withdrawal (confirmed by default)
     $transaction = $wallet->withdraw(
         amount: 50.00,
         reference: 'WD-001',
         description: 'Payment for service',
         meta: ['recipient' => 'vendor-123']
+    );
+
+    // Pending withdrawal (not confirmed - balance won't change until confirmed)
+    $pendingTransaction = $wallet->withdraw(
+        amount: 50.00,
+        reference: 'WD-002',
+        description: 'Pending withdrawal',
+        meta: null,
+        confirmed: false
     );
 } catch (\Exception $e) {
     // Handle insufficient balance or other errors
@@ -229,17 +266,35 @@ try {
 #### Using the Service
 
 ```php
-// By wallet ID
+// By wallet ID - confirmed withdrawal
 $transaction = $walletService->withdraw(
     walletId: $wallet->id,
-    amount: 50.00
+    amount: 50.00,
+    reference: null,
+    description: null,
+    meta: null,
+    confirmed: true  // default is true
+);
+
+// By wallet ID - pending withdrawal
+$pendingTransaction = $walletService->withdraw(
+    walletId: $wallet->id,
+    amount: 50.00,
+    reference: 'WD-002',
+    description: 'Pending withdrawal',
+    meta: null,
+    confirmed: false  // balance won't change
 );
 
 // By wallet name
 $transaction = $walletService->withdrawByName(
     userId: 1,
     walletName: 'Main Wallet',
-    amount: 50.00
+    amount: 50.00,
+    reference: null,
+    description: null,
+    meta: null,
+    confirmed: true
 );
 ```
 
@@ -272,6 +327,37 @@ $deposits = $wallet->getTransactionsByType('deposit');
 $withdrawals = $wallet->getTransactionsByType('withdraw');
 ```
 
+### Confirming Pending Transactions
+
+When you create a transaction with `confirmed: false`, the wallet balance is not affected. You can confirm the transaction later to apply the balance change.
+
+#### Using the Service
+
+```php
+use Nishant\Wallet\Services\WalletService;
+
+$walletService = app(WalletService::class);
+
+// Confirm a pending transaction
+$confirmedTransaction = $walletService->confirmTransaction($transactionId);
+
+// The wallet balance will now be updated based on the transaction type
+// - For deposits: balance increases
+// - For withdrawals: balance decreases (if sufficient balance exists)
+```
+
+#### Check Transaction Status
+
+```php
+$transaction = Transaction::find($transactionId);
+
+if ($transaction->confirmed) {
+    // Transaction is confirmed, balance has been updated
+} else {
+    // Transaction is pending, balance has not been updated
+}
+```
+
 ### Getting Wallet Information
 
 ```php
@@ -302,18 +388,19 @@ The package provides RESTful API endpoints. Make sure you have authentication mi
 
 ### Wallet Endpoints
 
-- `GET /api/wallet/wallets` - Get all wallets for authenticated user
-- `POST /api/wallet/wallets` - Create a new wallet
-- `GET /api/wallet/wallets/{id}` - Get a specific wallet with transactions
-- `POST /api/wallet/wallets/{id}/deposit` - Deposit amount to wallet
-- `POST /api/wallet/wallets/{id}/withdraw` - Withdraw amount from wallet
-- `GET /api/wallet/wallets/{id}/transactions` - Get transactions for a wallet
+- `GET /api/wallets` - Get all wallets for authenticated user
+- `POST /api/wallets` - Create a new wallet
+- `GET /api/wallets/{id}` - Get a specific wallet with transactions
+- `POST /api/wallets/{id}/deposit` - Deposit amount to wallet
+- `POST /api/wallets/{id}/withdraw` - Withdraw amount from wallet
+- `GET /api/wallets/{id}/transactions` - Get transactions for a wallet
+- `POST /api/wallets/transactions/{transactionId}/confirm` - Confirm a pending transaction
 
 ### Transaction Endpoints
 
-- `GET /api/wallet/transactions/by-wallet-name?wallet_name=Main Wallet` - Get transactions by wallet name
-- `POST /api/wallet/transactions/deposit-by-name` - Deposit to wallet by name
-- `POST /api/wallet/transactions/withdraw-by-name` - Withdraw from wallet by name
+- `GET /api/transactions/by-wallet-name?wallet_name=Main Wallet` - Get transactions by wallet name
+- `POST /api/transactions/deposit-by-name` - Deposit to wallet by name
+- `POST /api/transactions/withdraw-by-name` - Withdraw from wallet by name
 
 ### API Request Examples
 
@@ -333,7 +420,7 @@ Authorization: Bearer {token}
 #### Deposit Amount
 
 ```bash
-POST /api/wallet/wallets/1/deposit
+POST /api/wallets/1/deposit
 Content-Type: application/json
 Authorization: Bearer {token}
 
@@ -343,28 +430,86 @@ Authorization: Bearer {token}
     "description": "Initial deposit",
     "meta": {
         "source": "bank_transfer"
-    }
+    },
+    "confirmed": true
+}
+```
+
+#### Deposit Amount (Pending)
+
+```bash
+POST /api/wallets/1/deposit
+Content-Type: application/json
+Authorization: Bearer {token}
+
+{
+    "amount": 100.00,
+    "reference": "DEP-002",
+    "description": "Pending deposit",
+    "confirmed": false
 }
 ```
 
 #### Withdraw Amount
 
 ```bash
-POST /api/wallet/wallets/1/withdraw
+POST /api/wallets/1/withdraw
 Content-Type: application/json
 Authorization: Bearer {token}
 
 {
     "amount": 50.00,
     "reference": "WD-001",
-    "description": "Payment for service"
+    "description": "Payment for service",
+    "confirmed": true
+}
+```
+
+#### Withdraw Amount (Pending)
+
+```bash
+POST /api/wallets/1/withdraw
+Content-Type: application/json
+Authorization: Bearer {token}
+
+{
+    "amount": 50.00,
+    "reference": "WD-002",
+    "description": "Pending withdrawal",
+    "confirmed": false
+}
+```
+
+#### Confirm Pending Transaction
+
+```bash
+POST /api/wallets/transactions/{transactionId}/confirm
+Authorization: Bearer {token}
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "message": "Transaction confirmed successfully",
+    "data": {
+        "id": 2,
+        "wallet_id": 1,
+        "type": "withdraw",
+        "amount": "50.00",
+        "confirmed": true,
+        "balance_before": "1000.00",
+        "balance_after": "950.00",
+        "reference": "WD-002",
+        "description": "Pending withdrawal"
+    }
 }
 ```
 
 #### Get Transactions by Wallet Name
 
 ```bash
-GET /api/wallet/transactions/by-wallet-name?wallet_name=Main Wallet
+GET /api/transactions/by-wallet-name?wallet_name=Main Wallet
 Authorization: Bearer {token}
 ```
 
@@ -380,8 +525,8 @@ use Nishant\Wallet\Contracts\WalletInterface;
 interface WalletInterface
 {
     public function getBalance(): float;
-    public function deposit(float $amount, ?string $reference = null, ?string $description = null, ?array $meta = null);
-    public function withdraw(float $amount, ?string $reference = null, ?string $description = null, ?array $meta = null);
+    public function deposit(float $amount, ?string $reference = null, ?string $description = null, ?array $meta = null, bool $confirmed = true);
+    public function withdraw(float $amount, ?string $reference = null, ?string $description = null, ?array $meta = null, bool $confirmed = true);
     public function hasBalance(float $amount): bool;
     public function transactions();
     public function getTransactionsByType(string $type);
@@ -402,6 +547,7 @@ interface TransactionInterface
     public function getReference(): ?string;
     public function getDescription(): ?string;
     public function getMeta(): ?array;
+    public function isConfirmed(): bool;
 }
 ```
 
@@ -430,8 +576,8 @@ This trait provides methods like:
 ### Walletable Trait
 
 This trait is automatically used by the Wallet model and provides:
-- `deposit()` - Deposit amount
-- `withdraw()` - Withdraw amount
+- `deposit()` - Deposit amount (with optional `confirmed` parameter)
+- `withdraw()` - Withdraw amount (with optional `confirmed` parameter)
 - `hasBalance()` - Check balance
 - `getBalance()` - Get current balance
 
@@ -459,16 +605,21 @@ This trait is automatically used by the Wallet model and provides:
 - `reference` - Optional reference number
 - `description` - Optional description
 - `meta` - JSON metadata
+- `confirmed` - Boolean flag indicating if transaction is confirmed (default: true)
 - `timestamps` - Created/updated timestamps
+
+**Note:** When `confirmed` is `false`, the transaction is created but the wallet balance is not updated. The balance will only be updated when the transaction is confirmed using the `confirmTransaction()` method.
 
 ## Error Handling
 
 The package throws exceptions for various scenarios:
 
-- **Insufficient Balance**: When trying to withdraw more than available balance
+- **Insufficient Balance**: When trying to withdraw more than available balance (or when confirming a withdrawal)
 - **Inactive Wallet**: When trying to deposit/withdraw from inactive wallet
 - **Invalid Amount**: When amount is zero or negative
 - **Wallet Not Found**: When wallet doesn't exist
+- **Transaction Already Confirmed**: When trying to confirm an already confirmed transaction
+- **Transaction Not Found**: When trying to confirm a non-existent transaction
 
 Always wrap wallet operations in try-catch blocks:
 
@@ -478,6 +629,14 @@ try {
 } catch (\Exception $e) {
     // Handle error
     logger()->error('Wallet operation failed: ' . $e->getMessage());
+}
+
+// Confirming transactions
+try {
+    $confirmedTransaction = $walletService->confirmTransaction($transactionId);
+} catch (\Exception $e) {
+    // Handle error (e.g., insufficient balance, already confirmed, etc.)
+    logger()->error('Transaction confirmation failed: ' . $e->getMessage());
 }
 ```
 
@@ -533,6 +692,37 @@ class WalletTest extends TestCase
         $this->expectException(\Exception::class);
         $wallet->withdraw(100.00);
     }
+
+    public function test_can_create_pending_transaction()
+    {
+        $user = User::factory()->create();
+        $wallet = $user->createWallet('Test Wallet');
+        $wallet->deposit(100.00);
+        
+        // Create pending withdrawal - balance should not change
+        $pendingTransaction = $wallet->withdraw(50.00, null, null, null, false);
+        
+        $this->assertFalse($pendingTransaction->confirmed);
+        $this->assertEquals(100.00, $wallet->fresh()->balance); // Balance unchanged
+    }
+
+    public function test_can_confirm_pending_transaction()
+    {
+        $user = User::factory()->create();
+        $wallet = $user->createWallet('Test Wallet');
+        $wallet->deposit(100.00);
+        
+        // Create pending withdrawal
+        $pendingTransaction = $wallet->withdraw(50.00, null, null, null, false);
+        $this->assertEquals(100.00, $wallet->fresh()->balance);
+        
+        // Confirm the transaction
+        $walletService = app(\Nishant\Wallet\Services\WalletService::class);
+        $confirmedTransaction = $walletService->confirmTransaction($pendingTransaction->id);
+        
+        $this->assertTrue($confirmedTransaction->confirmed);
+        $this->assertEquals(50.00, $wallet->fresh()->balance); // Balance updated
+    }
 }
 ```
 
@@ -545,6 +735,14 @@ This package is open-sourced software licensed under the [MIT license](https://o
 For issues, questions, or contributions, please open an issue on the GitHub repository.
 
 ## Changelog
+
+### Version 1.1.0
+- Added pending transaction support with `confirmed` column
+- Transactions can now be created with `confirmed: false` to prevent immediate balance changes
+- Added `confirmTransaction()` method to confirm pending transactions
+- Added API endpoint for confirming transactions
+- Updated interfaces to support confirmed parameter
+- Balance is only updated when transactions are confirmed
 
 ### Version 1.0.0
 - Initial release

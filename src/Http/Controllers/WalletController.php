@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Nishant\Wallet\Services\WalletService;
 use Nishant\Wallet\Models\Wallet;
+use Nishant\Wallet\Models\Transaction;
 use Exception;
 
 class WalletController extends Controller
@@ -125,6 +126,7 @@ class WalletController extends Controller
             'reference' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'meta' => 'nullable|array',
+            'confirmed' => 'sometimes|boolean',
         ]);
 
         try {
@@ -143,7 +145,8 @@ class WalletController extends Controller
                 $request->amount,
                 $request->reference,
                 $request->description,
-                $request->meta
+                $request->meta,
+                $request->boolean('confirmed', true)
             );
 
             return response()->json([
@@ -173,6 +176,7 @@ class WalletController extends Controller
             'reference' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'meta' => 'nullable|array',
+            'confirmed' => 'sometimes|boolean',
         ]);
 
         try {
@@ -191,7 +195,8 @@ class WalletController extends Controller
                 $request->amount,
                 $request->reference,
                 $request->description,
-                $request->meta
+                $request->meta,
+                $request->boolean('confirmed', true)
             );
 
             return response()->json([
@@ -237,6 +242,39 @@ class WalletController extends Controller
                 'success' => false,
                 'message' => $e->getMessage(),
             ], 404);
+        }
+    }
+
+    /**
+     * Confirm a pending transaction.
+     *
+     * @param int $transactionId
+     * @return JsonResponse
+     */
+    public function confirm(int $transactionId): JsonResponse
+    {
+        try {
+            $transaction = Transaction::findOrFail($transactionId);
+
+            if ($transaction->wallet->user_id !== auth()->id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized',
+                ], 403);
+            }
+
+            $updatedTransaction = $this->walletService->confirmTransaction($transactionId);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Transaction confirmed successfully',
+                'data' => $updatedTransaction,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
         }
     }
 }

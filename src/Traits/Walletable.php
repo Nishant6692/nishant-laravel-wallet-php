@@ -29,7 +29,7 @@ trait Walletable
      * @return Transaction
      * @throws Exception
      */
-    public function deposit(float $amount, ?string $reference = null, ?string $description = null, ?array $meta = null): Transaction
+    public function deposit(float $amount, ?string $reference = null, ?string $description = null, ?array $meta = null, bool $confirmed = true): Transaction
     {
         if ($amount <= 0) {
             throw new Exception('Deposit amount must be greater than zero.');
@@ -40,17 +40,21 @@ trait Walletable
         }
 
         $balanceBefore = $this->balance;
-        $this->balance += $amount;
-        $this->save();
+
+        if ($confirmed) {
+            $this->balance += $amount;
+            $this->save();
+        }
 
         return $this->transactions()->create([
             'type' => TransactionType::DEPOSIT->value,
             'amount' => $amount,
             'balance_before' => $balanceBefore,
-            'balance_after' => $this->balance,
+            'balance_after' => $confirmed ? $this->balance : $balanceBefore,
             'reference' => $reference ?? Str::uuid()->toString(),
             'description' => $description,
             'meta' => $meta,
+            'confirmed' => $confirmed,
         ]);
     }
 
@@ -64,7 +68,7 @@ trait Walletable
      * @return Transaction
      * @throws Exception
      */
-    public function withdraw(float $amount, ?string $reference = null, ?string $description = null, ?array $meta = null): Transaction
+    public function withdraw(float $amount, ?string $reference = null, ?string $description = null, ?array $meta = null, bool $confirmed = true): Transaction
     {
         if ($amount <= 0) {
             throw new Exception('Withdraw amount must be greater than zero.');
@@ -74,22 +78,25 @@ trait Walletable
             throw new Exception('Cannot withdraw from inactive wallet.');
         }
 
-        if (!$this->hasBalance($amount)) {
+        if ($confirmed && !$this->hasBalance($amount)) {
             throw new Exception('Insufficient balance in wallet.');
         }
 
         $balanceBefore = $this->balance;
-        $this->balance -= $amount;
-        $this->save();
+        if ($confirmed) {
+            $this->balance -= $amount;
+            $this->save();
+        }
 
         return $this->transactions()->create([
             'type' => TransactionType::WITHDRAW->value,
             'amount' => $amount,
             'balance_before' => $balanceBefore,
-            'balance_after' => $this->balance,
+            'balance_after' => $confirmed ? $this->balance : $balanceBefore,
             'reference' => $reference ?? Str::uuid()->toString(),
             'description' => $description,
             'meta' => $meta,
+            'confirmed' => $confirmed,
         ]);
     }
 
@@ -102,6 +109,45 @@ trait Walletable
     public function hasBalance(float $amount): bool
     {
         return $this->balance >= $amount;
+    }
+
+    /**
+     * Confirm a pending transaction and apply its effect to the wallet balance.
+     *
+     * @param Transaction $transaction
+     * @return Transaction
+     * @throws Exception
+     */
+    public function confirmTransaction(Transaction $transaction): Transaction
+    {
+        if ($transaction->confirmed) {
+            return $transaction;
+        }
+
+        if ((int) $transaction->wallet_id !== (int) $this->id) {
+            throw new Exception('Transaction does not belong to this wallet.');
+        }
+
+        $balanceBefore = $this->balance;
+
+        if ($transaction->type === TransactionType::DEPOSIT->value) {
+            $this->balance += $transaction->amount;
+        } else {
+            if (!$this->hasBalance($transaction->amount)) {
+                throw new Exception('Insufficient balance to confirm withdrawal.');
+            }
+            $this->balance -= $transaction->amount;
+        }
+
+        $this->save();
+
+        $transaction->update([
+            'balance_before' => $balanceBefore,
+            'balance_after' => $this->balance,
+            'confirmed' => true,
+        ]);
+
+        return $transaction->refresh();
     }
 }
 

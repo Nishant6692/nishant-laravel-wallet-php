@@ -40,10 +40,10 @@ class WalletService
      * @return Transaction
      * @throws Exception
      */
-    public function deposit(int $walletId, float $amount, ?string $reference = null, ?string $description = null, ?array $meta = null): Transaction
+    public function deposit(int $walletId, float $amount, ?string $reference = null, ?string $description = null, ?array $meta = null, bool $confirmed = true): Transaction
     {
         $wallet = Wallet::findOrFail($walletId);
-        return $wallet->deposit($amount, $reference, $description, $meta);
+        return $wallet->deposit($amount, $reference, $description, $meta, $confirmed);
     }
 
     /**
@@ -58,7 +58,7 @@ class WalletService
      * @return Transaction
      * @throws Exception
      */
-    public function depositByName(int $userId, string $walletName, float $amount, ?string $reference = null, ?string $description = null, ?array $meta = null): Transaction
+    public function depositByName(int $userId, string $walletName, float $amount, ?string $reference = null, ?string $description = null, ?array $meta = null, bool $confirmed = true): Transaction
     {
         $userModel = config('wallet.user_model', \App\Models\User::class);
         $user = $userModel::findOrFail($userId);
@@ -73,7 +73,7 @@ class WalletService
             throw new Exception("Wallet '{$walletName}' not found for user.");
         }
 
-        return $wallet->deposit($amount, $reference, $description, $meta);
+        return $wallet->deposit($amount, $reference, $description, $meta, $confirmed);
     }
 
     /**
@@ -87,10 +87,10 @@ class WalletService
      * @return Transaction
      * @throws Exception
      */
-    public function withdraw(int $walletId, float $amount, ?string $reference = null, ?string $description = null, ?array $meta = null): Transaction
+    public function withdraw(int $walletId, float $amount, ?string $reference = null, ?string $description = null, ?array $meta = null, bool $confirmed = true): Transaction
     {
         $wallet = Wallet::findOrFail($walletId);
-        return $wallet->withdraw($amount, $reference, $description, $meta);
+        return $wallet->withdraw($amount, $reference, $description, $meta, $confirmed);
     }
 
     /**
@@ -105,7 +105,7 @@ class WalletService
      * @return Transaction
      * @throws Exception
      */
-    public function withdrawByName(int $userId, string $walletName, float $amount, ?string $reference = null, ?string $description = null, ?array $meta = null): Transaction
+    public function withdrawByName(int $userId, string $walletName, float $amount, ?string $reference = null, ?string $description = null, ?array $meta = null, bool $confirmed = true): Transaction
     {
         $userModel = config('wallet.user_model', \App\Models\User::class);
         $user = $userModel::findOrFail($userId);
@@ -120,7 +120,7 @@ class WalletService
             throw new Exception("Wallet '{$walletName}' not found for user.");
         }
 
-        return $wallet->withdraw($amount, $reference, $description, $meta);
+        return $wallet->withdraw($amount, $reference, $description, $meta, $confirmed);
     }
 
     /**
@@ -182,6 +182,25 @@ class WalletService
         }
 
         return $user->getWalletByName($walletName);
+    }
+
+    /**
+     * Confirm a pending transaction and apply it to the wallet.
+     *
+     * @param int $transactionId
+     * @return Transaction
+     * @throws Exception
+     */
+    public function confirmTransaction(int $transactionId): Transaction
+    {
+        $transaction = Transaction::findOrFail($transactionId);
+        $wallet = $transaction->wallet;
+
+        if (!$wallet) {
+            throw new Exception('Wallet not found for transaction.');
+        }
+
+        return $wallet->confirmTransaction($transaction);
     }
 
     /**

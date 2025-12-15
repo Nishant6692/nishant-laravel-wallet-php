@@ -20,7 +20,7 @@ interface WalletInterface
      * @param array|null $meta
      * @return \Nishant\Wallet\Models\Transaction
      */
-    public function deposit(float $amount, ?string $reference = null, ?string $description = null, ?array $meta = null);
+    public function deposit(float $amount, ?string $reference = null, ?string $description = null, ?array $meta = null, bool $confirmed = true);
 
     /**
      * Withdraw amount from the wallet.
@@ -32,7 +32,7 @@ interface WalletInterface
      * @return \Nishant\Wallet\Models\Transaction
      * @throws \Exception
      */
-    public function withdraw(float $amount, ?string $reference = null, ?string $description = null, ?array $meta = null);
+    public function withdraw(float $amount, ?string $reference = null, ?string $description = null, ?array $meta = null, bool $confirmed = true);
 
     /**
      * Check if wallet has sufficient balance.
@@ -56,5 +56,13 @@ interface WalletInterface
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getTransactionsByType(string $type);
+
+    /**
+     * Confirm a pending transaction and apply its effect to the wallet balance.
+     *
+     * @param \Nishant\Wallet\Models\Transaction $transaction
+     * @return \Nishant\Wallet\Models\Transaction
+     */
+    public function confirmTransaction(\Nishant\Wallet\Models\Transaction $transaction);
 }
 

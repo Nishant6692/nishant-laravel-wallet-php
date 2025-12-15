@@ -13,6 +13,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/wallets/{id}/withdraw', [WalletController::class, 'withdraw']);
     Route::get('/wallets/{id}/transactions', [WalletController::class, 'transactions']);
 
+    // Transaction routes
+    Route::post('/wallets/transactions/{transactionId}/confirm', [WalletController::class, 'confirm']);
+
     // Transaction routes by wallet name
     Route::get('/transactions/by-wallet-name', [TransactionController::class, 'byWalletName']);
     Route::post('/transactions/deposit-by-name', [TransactionController::class, 'depositByName']);
